@@ -1,4 +1,5 @@
 import { graphFetch } from '../../../../lib/graph';
+import { obtenerConfig } from '../../../../lib/config';
 
 function diasRestantes(fechaFin) {
   const hoy = new Date();
@@ -9,8 +10,8 @@ function diasRestantes(fechaFin) {
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
-async function enviarCorreo(destinatario, asunto, contenidoHtml) {
-  const destinoFinal = process.env.TEST_EMAIL_OVERRIDE || destinatario;
+async function enviarCorreo(config, destinatario, asunto, contenidoHtml) {
+  const destinoFinal = config.modoPrueba ? config.correoPruebas : destinatario;
   const mensaje = {
     message: {
       subject: asunto,
@@ -18,7 +19,7 @@ async function enviarCorreo(destinatario, asunto, contenidoHtml) {
       toRecipients: [{ emailAddress: { address: destinoFinal } }],
     },
   };
-  await graphFetch(`/users/${process.env.CORREO_REMITENTE}/sendMail`, {
+  await graphFetch(`/users/${config.correoRemitente}/sendMail`, {
     method: 'POST',
     body: JSON.stringify(mensaje),
   });
@@ -30,11 +31,12 @@ export async function GET(request) {
     return Response.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  const config = await obtenerConfig();
+
   const siteId = process.env.SITE_ID;
   const listTareas = process.env.LIST_ID_TAREAS;
   const listContactos = process.env.LIST_ID_CONTACTOS;
 
-  // 1. Traer todos los contactos (para armar el mapa Nombre -> Correo)
   const contactosResp = await graphFetch(
     `/sites/${siteId}/lists/${listContactos}/items?expand=fields`
   );
@@ -43,7 +45,6 @@ export async function GET(request) {
     mapaCorreos[item.fields.Title] = item.fields.Correo;
   }
 
-  // 2. Traer las tareas en proceso
   const filtro = encodeURIComponent(`fields/Estado eq 'En proceso'`);
   const tareasResp = await graphFetch(
     `/sites/${siteId}/lists/${listTareas}/items?expand=fields&$filter=${filtro}`
@@ -62,37 +63,33 @@ export async function GET(request) {
       continue;
     }
 
-    // Caso: faltan 3 días
-    if (dias === 3 && yaEnviado === '') {
+    if (dias === config.diasAviso1 && yaEnviado === '') {
       await enviarCorreo(
+        config,
         correoResponsable,
-        `Recordatorio: quedan 3 días para finalizar "${f.Title}"`,
-        `<p>Le quedan <strong>3 días</strong> para finalizar la tarea "<strong>${f.Title}</strong>", con fecha límite ${new Date(f.FechaFin).toLocaleDateString('es-CO')}.</p>`
+        `Recordatorio: quedan ${config.diasAviso1} días para finalizar "${f.Title}"`,
+        `<p>Le quedan <strong>${config.diasAviso1} días</strong> para finalizar la tarea "<strong>${f.Title}</strong>", con fecha límite ${new Date(f.FechaFin).toLocaleDateString('es-CO')}.</p>`
       );
       await graphFetch(`/sites/${siteId}/lists/${listTareas}/items/${item.id}/fields`, {
         method: 'PATCH',
-        body: JSON.stringify({ RecordatorioEnviado: '3dias' }),
+        body: JSON.stringify({ RecordatorioEnviado: 'aviso1' }),
       });
-      resultados.push({ tarea: f.Title, accion: 'correo 3 dias enviado' });
-    }
-
-    // Caso: falta 1 día
-    else if (dias === 1 && yaEnviado === '3dias') {
+      resultados.push({ tarea: f.Title, accion: `correo aviso1 (${config.diasAviso1}d) enviado` });
+    } else if (dias === config.diasAviso2 && yaEnviado === 'aviso1') {
       await enviarCorreo(
+        config,
         correoResponsable,
-        `Recordatorio: queda 1 día para finalizar "${f.Title}"`,
-        `<p>Le queda <strong>1 día</strong> para finalizar la tarea "<strong>${f.Title}</strong>", con fecha límite ${new Date(f.FechaFin).toLocaleDateString('es-CO')}.</p>`
+        `Recordatorio: queda ${config.diasAviso2} día(s) para finalizar "${f.Title}"`,
+        `<p>Le queda <strong>${config.diasAviso2} día(s)</strong> para finalizar la tarea "<strong>${f.Title}</strong>", con fecha límite ${new Date(f.FechaFin).toLocaleDateString('es-CO')}.</p>`
       );
       await graphFetch(`/sites/${siteId}/lists/${listTareas}/items/${item.id}/fields`, {
         method: 'PATCH',
-        body: JSON.stringify({ RecordatorioEnviado: '1dia' }),
+        body: JSON.stringify({ RecordatorioEnviado: 'aviso2' }),
       });
-      resultados.push({ tarea: f.Title, accion: 'correo 1 dia enviado' });
-    }
-
-    // Caso: venció
-    else if (dias <= 0) {
+      resultados.push({ tarea: f.Title, accion: `correo aviso2 (${config.diasAviso2}d) enviado` });
+    } else if (dias <= 0) {
       await enviarCorreo(
+        config,
         correoResponsable,
         `Tarea vencida: "${f.Title}"`,
         `<p>La tarea "<strong>${f.Title}</strong>" venció el ${new Date(f.FechaFin).toLocaleDateString('es-CO')} y sigue sin finalizarse.</p>`
