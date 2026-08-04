@@ -14,6 +14,13 @@ export async function POST(request) {
     return Response.json({ error: 'Datos incompletos' }, { status: 400 });
   }
 
+  if (archivo && archivo.size > 3 * 1024 * 1024) {
+    return Response.json(
+      { error: 'El archivo adjunto no debe superar los 3 MB' },
+      { status: 400 }
+    );
+  }
+
   const config = await obtenerConfig();
 
   const siteId = process.env.SITE_ID;
