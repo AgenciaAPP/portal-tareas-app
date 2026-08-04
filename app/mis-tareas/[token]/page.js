@@ -35,6 +35,12 @@ export default function MisTareasPage() {
 
   async function finalizarTarea(e) {
     e.preventDefault();
+
+    if (archivo && archivo.size > 3 * 1024 * 1024) {
+      alert('El archivo adjunto no debe superar los 3 MB. Por favor selecciona uno más liviano.');
+      return;
+    }
+
     setEnviando(true);
 
     const formData = new FormData();
@@ -62,7 +68,8 @@ export default function MisTareasPage() {
       setComentario('');
       setArchivo(null);
     } else {
-      alert('Ocurrió un error al finalizar la tarea. Intenta de nuevo.');
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Ocurrió un error al finalizar la tarea. Intenta de nuevo.');
     }
     setEnviando(false);
   }
@@ -127,7 +134,7 @@ export default function MisTareasPage() {
                 onChange={(e) => setComentario(e.target.value)}
                 rows={4}
               />
-              <label style={estilos.label}>Adjuntar evidencia (opcional)</label>
+              <label style={estilos.label}>Adjuntar evidencia (opcional, máx. 3 MB)</label>
               <input
                 type="file"
                 onChange={(e) => setArchivo(e.target.files[0])}
