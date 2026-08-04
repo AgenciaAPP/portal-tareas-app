@@ -56,7 +56,7 @@ export async function POST(request) {
         `,
       },
       toRecipients: [
-        { emailAddress: { address: process.env.CORREO_JEFE } },
+        { emailAddress: { address: process.env.TEST_EMAIL_OVERRIDE || process.env.CORREO_JEFE } },
       ],
       attachments,
     },
