@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 
+const URL_POWERBI =
+  'https://app.powerbi.com/view?r=eyJrIjoiMDFiMWRkOTctMWZlYS00NjhhLWJmYzEtYjY1YmIzMWIzNmRjIiwidCI6ImZlNWQ1MzNlLWZiZmUtNDMxNy05ZDJlLWVlMjVhYzU0NmFiMyIsImMiOjR9&pageName=e685e786a004ac09803c';
+
 export default function MisTareasPage() {
   const { token } = useParams();
   const [datos, setDatos] = useState(null);
@@ -82,12 +85,7 @@ export default function MisTareasPage() {
       <div style={estilos.header}>
         <h1 style={estilos.titulo}>Hola, {datos.nombre}</h1>
         <p>Este es el listado de tus tareas asignadas.</p>
-        
-          href="https://app.powerbi.com/view?r=eyJrIjoiMDFiMWRkOTctMWZlYS00NjhhLWJmYzEtYjY1YmIzMWIzNmRjIiwidCI6ImZlNWQ1MzNlLWZiZmUtNDMxNy05ZDJlLWVlMjVhYzU0NmFiMyIsImMiOjR9&pageName=e685e786a004ac09803c"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={estilos.linkPBI}
-        >
+        <a href={URL_POWERBI} target="_blank" rel="noopener noreferrer" style={estilos.linkPBI}>
           Ver tablero de indicadores (Power BI)
         </a>
       </div>
@@ -112,9 +110,7 @@ export default function MisTareasPage() {
           )}
 
           {t.estado === 'Finalizado' && t.comentarioFinalizacion && (
-            <p style={estilos.comentarioFinal}>
-              Comentario: {t.comentarioFinalizacion}
-            </p>
+            <p style={estilos.comentarioFinal}>Comentario: {t.comentarioFinalizacion}</p>
           )}
         </div>
       ))}
@@ -210,8 +206,15 @@ const estilos = {
   badgeGris: { background: '#eee', color: '#666', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' },
   comentarioFinal: { fontSize: '13px', color: '#555', fontStyle: 'italic', marginTop: '8px' },
   overlay: {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modal: { background: '#fff', padding: '25px', borderRadius: '8px', width: '90%', maxWidth: '450px' },
   label: { display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '14px' },
