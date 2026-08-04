@@ -10,11 +10,12 @@ function diasRestantes(fechaFin) {
 }
 
 async function enviarCorreo(destinatario, asunto, contenidoHtml) {
+  const destinoFinal = process.env.TEST_EMAIL_OVERRIDE || destinatario;
   const mensaje = {
     message: {
       subject: asunto,
       body: { contentType: 'HTML', content: contenidoHtml },
-      toRecipients: [{ emailAddress: { address: destinatario } }],
+      toRecipients: [{ emailAddress: { address: destinoFinal } }],
     },
   };
   await graphFetch(`/users/${process.env.CORREO_REMITENTE}/sendMail`, {
